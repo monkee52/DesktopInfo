@@ -14,42 +14,24 @@ using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace DesktopInfo {
-    public delegate string InfoListItemGetValueHandler();
-    public delegate InfoListItem InfoListItemFactory(string name, InfoListItemGetValueHandler getValue);
-
-    public class InfoListItem : INotifyPropertyChanged
-    {
-        public string Name { get; private set; }
-
-        private InfoListItemGetValueHandler getValue;
-
-        public string Value => this.getValue();
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        internal InfoListItem(MainWindow window, string name, InfoListItemGetValueHandler getValue) {
-            this.Name = name;
-            this.getValue = getValue;
-
-            window.Refresh += (sender, e) => {
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(this.Value)));
-            };
-        }
-    }
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window {
         public event EventHandler Refresh;
 
+        private InfoItems infoItems;
+
         public MainWindow() {
             InitializeComponent();
+
+            this.infoItems = new InfoItems((name, getValue) => new InfoItem(this, name, getValue));
         }
 
         /// <summary>
         /// Moves window between the desktop background and desktop icons
         /// </summary>
+        // Based off of https://github.com/HatsuneMiku3939/3939LiveWallpaer/blob/master/3939LiveWallpaper/Program.cs
         private void MoveUnder() {
             // Pop-under desktop icons?
             IntPtr progman = NativeMethods.FindWindow("ProgMan", null);
@@ -60,8 +42,7 @@ namespace DesktopInfo {
 
             IntPtr workerW = IntPtr.Zero;
 
-            // We enumerate all Windows, until we find one, that has the SHELLDLL_DefView
-            // as a child.
+            // We enumerate all Windows, until we find one, that has the SHELLDLL_DefView as a child.
             // If we found that window, we take its next sibling and assign it to workerw.
             NativeMethods.EnumWindows(new NativeMethods.EnumWindowsProc((topHandle, topParamHandle) => {
                 IntPtr p = NativeMethods.FindWindowEx(topHandle, IntPtr.Zero, "SHELLDLL_DefView", IntPtr.Zero);
@@ -77,6 +58,8 @@ namespace DesktopInfo {
 
             NativeMethods.SetParent(helper.Handle, workerW);
 
+            // Internally, DesktopInfo takes up the whole of the primary screen's desktop.
+            // XAML is used to position the semi-transparent grid
             this.Width = Screen.PrimaryScreen.WorkingArea.Width;
             this.Height = Screen.PrimaryScreen.WorkingArea.Height;
             this.Left = Screen.PrimaryScreen.WorkingArea.Left;
@@ -84,13 +67,24 @@ namespace DesktopInfo {
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
+            // TODO: Move to settings
+            string[] infoItems = new[] {
+                "Uptime",
+                "Image Date",
+                null,
+                "Username",
+                null,
+                "IP Addresses",
+                "Volumes"
+            };
+
             // Init data
-            this.CreateInfoList(InfoProperties.CreateInfoItems((name, getValue) => new InfoListItem(this, name, getValue)));
+            this.CreateInfoItemsView(infoItems.Select(x => this.infoItems.GetByName(x)));
 
             this.DoRefresh();
             this.MoveUnder();
 
-            // Auto-update
+            // Auto-update info items
             Timer t1 = new Timer() {
                 Interval = Properties.Settings.Default.UpdateInterval
             };
@@ -107,10 +101,10 @@ namespace DesktopInfo {
         /// Also creates a tuple list to hold the value holders and the value factories
         /// </summary>
         /// <param name="infos"></param>
-        private void CreateInfoList(IList<InfoListItem> infos) {
+        private void CreateInfoItemsView(IEnumerable<InfoItem> infos) {
             int row = this.mainGrid.RowDefinitions.Count;
 
-            foreach (InfoListItem item in infos) {
+            foreach (InfoItem item in infos) {
                 bool isSpacer = item == null;
 
                 this.mainGrid.RowDefinitions.Add(new RowDefinition() {
@@ -151,12 +145,12 @@ namespace DesktopInfo {
 
                     mainGrid.Children.Add(tbValue);
 
-                    // Assign factory to textblock
-                    System.Windows.Data.Binding binding = new System.Windows.Data.Binding("Value");
-
-                    binding.Source = item;
-                    binding.Mode = System.Windows.Data.BindingMode.OneWay;
-                    binding.UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged;
+                    // Assign factory to textblock, using data binding
+                    System.Windows.Data.Binding binding = new System.Windows.Data.Binding("Value") {
+                        Source = item,
+                        Mode = System.Windows.Data.BindingMode.OneWay,
+                        UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged
+                    };
 
                     tbValue.SetBinding(TextBlock.TextProperty, binding);
                 }
@@ -166,7 +160,7 @@ namespace DesktopInfo {
         }
 
         /// <summary>
-        /// Populates grid rows
+        /// Forces a refresh of all the info items displayed
         /// </summary>
         public void DoRefresh() {
             this.lblComputerName.Text = Environment.MachineName;

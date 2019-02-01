@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace DesktopInfo {
     static class NativeMethods {
+        #region Window layering methods
         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         [Flags]
@@ -33,7 +34,12 @@ namespace DesktopInfo {
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+        #endregion
 
+        /// <summary>
+        /// Retrieves the number of milliseconds that have elapsed since the system was started.
+        /// </summary>
+        /// <returns></returns>
         [DllImport("kernel32.dll")]
         public static extern UInt64 GetTickCount64();
     }

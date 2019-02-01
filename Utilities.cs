@@ -12,6 +12,7 @@ namespace DesktopInfo {
         /// <param name="isMetric">Whether the exponent calculation should use 1000 as the base, instead of 1024</param>
         /// <returns>A formatted string for the input byte size.</returns>
         public static string FormatFileSize(long size, bool isMetric = true) {
+            // Short-circuit
             if (size == 0) {
                 return "0 B";
             }
@@ -25,6 +26,9 @@ namespace DesktopInfo {
             }
 
             int exponent = (int)(Math.Log(Math.Abs(size)) / Math.Log(baseVal));
+
+            // Limit the suffixes
+            exponent = Math.Min(exponent, suffixes.Length - 1);
 
             return String.Format("{0:f2} {1}", size / Math.Pow(baseVal, exponent), suffixes[exponent]);
         }
