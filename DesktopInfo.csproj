@@ -61,10 +61,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="InfoItem.cs" />
-    <Compile Include="InfoItems.cs" />
+    <Compile Include="DynamicInfoItem.cs" />
+    <Compile Include="IInfoProvider.cs" />
+    <Compile Include="InfoProvider.cs" />
+    <Compile Include="InfoProviders.cs" />
     <Compile Include="NativeMethods.cs" />
-    <Compile Include="Settings.cs" />
+    <Compile Include="PolledInfoProvider.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="Volume.cs" />
     <Page Include="MainWindow.xaml">
@@ -89,19 +91,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

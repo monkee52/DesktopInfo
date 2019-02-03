@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Ayden Hull")]
 [assembly: AssemblyProduct("Desktop Info")]
-[assembly: AssemblyCopyright("Copyright © Ayden Hull 2018. All Rights Reserved.")]
+[assembly: AssemblyCopyright("Copyright © Ayden Hull 2019. All Rights Reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

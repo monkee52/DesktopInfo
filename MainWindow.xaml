@@ -20,4 +20,25 @@
             </Border>
         </Grid>
     </Border>
+    <Window.Resources>
+        <ResourceDictionary>
+            <Style TargetType="{x:Type TextBlock}" x:Key="InfoLabelStyle">
+                <Setter Property="VerticalAlignment" Value="Top" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="TextAlignment" Value="Right" />
+                <Setter Property="Margin" Value="0, 2, 2, 2" />
+            </Style>
+            <Style TargetType="{x:Type TextBlock}" x:Key="InfoValueStyle">
+                <Setter Property="VerticalAlignment" Value="Top" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="TextAlignment" Value="Left" />
+                <Setter Property="Margin" Value="2, 2, 0, 2" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
 </Window>

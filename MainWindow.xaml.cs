@@ -20,12 +20,8 @@ namespace DesktopInfo {
     public partial class MainWindow : Window {
         public event EventHandler Refresh;
 
-        private InfoItems infoItems;
-
         public MainWindow() {
             InitializeComponent();
-
-            this.infoItems = new InfoItems((name, getValue) => new InfoItem(this, name, getValue));
         }
 
         /// <summary>
@@ -68,25 +64,41 @@ namespace DesktopInfo {
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
             // TODO: Move to settings
-            string[] infoItems = new[] {
-                "Uptime",
-                "Image Date",
+            //IList<Tuple<string, string, string>> settingStrings = new List<Tuple<string, string, string>>() {
+            //    new Tuple<string, string, string>("helpPhone", "Help Phone", "#PHONENUMBER")
+            //};
+
+            //foreach (Tuple<string, string, string> settingString in settingStrings) {
+            //    InfoProviders.Add(new InfoProvider(settingString.Item1, settingString.Item2, settingString.Item3));
+            //}
+
+            //IList<Tuple<string, string, string>> environmentStrings = new List<Tuple<string, string, string>>() {
+            //    new Tuple<string, string, string>("path", "Path VAR", "PATH")
+            //};
+
+            //foreach (Tuple<string, string, string> environmentString in environmentStrings) {
+            //    InfoProviders.Add(new PolledInfoProvider(environmentString.Item1, environmentString.Item2, () => Environment.GetEnvironmentVariable(environmentString.Item3)));
+            //}
+
+            IList<IInfoProvider> infoProviders = new[] {
+                "uptime",
+                "imageDate",
                 null,
-                "Username",
+                "username",
                 null,
-                "IP Addresses",
-                "Volumes"
-            };
+                "ipAddresses",
+                "volumes",
+            }.Select(x => InfoProviders.GetByName(x)).ToList();
 
             // Init data
-            this.CreateInfoItemsView(infoItems.Select(x => this.infoItems.GetByName(x)));
+            this.CreateInfoItemsView(infoProviders);
 
             this.DoRefresh();
             this.MoveUnder();
 
             // Auto-update info items
             Timer t1 = new Timer() {
-                Interval = Properties.Settings.Default.UpdateInterval
+                Interval = 5000 // TODO: Settings
             };
 
             t1.Tick += (object sender2, EventArgs e2) => {
@@ -101,10 +113,10 @@ namespace DesktopInfo {
         /// Also creates a tuple list to hold the value holders and the value factories
         /// </summary>
         /// <param name="infos"></param>
-        private void CreateInfoItemsView(IEnumerable<InfoItem> infos) {
+        private void CreateInfoItemsView(IEnumerable<IInfoProvider> infos) {
             int row = this.mainGrid.RowDefinitions.Count;
 
-            foreach (InfoItem item in infos) {
+            foreach (IInfoProvider item in infos) {
                 bool isSpacer = item == null;
 
                 this.mainGrid.RowDefinitions.Add(new RowDefinition() {
@@ -112,17 +124,15 @@ namespace DesktopInfo {
                 });
 
                 if (!isSpacer) {
+                    // Attach polled providers to instance
+                    if (item is PolledInfoProvider) {
+                        ((PolledInfoProvider)item).AttachWindow(this);
+                    }
+
                     // Create name text block
                     TextBlock tbName = new TextBlock {
-                        VerticalAlignment = VerticalAlignment.Top,
-                        Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)),
-                        FontFamily = new FontFamily("Segoe UI"),
-                        FontSize = 14,
-                        FontWeight = FontWeights.Bold,
-                        TextAlignment = TextAlignment.Right,
-                        Margin = new Thickness(0, 2, 2, 2),
-
-                        Text = item.Name + ":"
+                        Style = (Style)this.FindResource("InfoLabelStyle"),
+                        Text = item.Label + ":"
                     };
 
                     tbName.SetValue(Grid.RowProperty, row);
@@ -132,12 +142,7 @@ namespace DesktopInfo {
 
                     // Create value text block
                     TextBlock tbValue = new TextBlock() {
-                        VerticalAlignment = VerticalAlignment.Top,
-                        Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)),
-                        FontFamily = new FontFamily("Segoe UI"),
-                        FontSize = 14,
-                        TextAlignment = TextAlignment.Left,
-                        Margin = new Thickness(2, 2, 0, 2)
+                        Style = (Style)this.FindResource("InfoValueStyle")
                     };
 
                     tbValue.SetValue(Grid.RowProperty, row);

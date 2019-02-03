@@ -7,22 +7,38 @@ using System.Security.Principal;
 using System.Text;
 
 namespace DesktopInfo {
-    public class InfoItems {
-        private static IDictionary<string, InfoItemGetValueHandler> items = new Dictionary<string, InfoItemGetValueHandler>() {
-            ["Uptime"] = () => TimeSpan.FromMilliseconds(NativeMethods.GetTickCount64()).ToString("d\\.hh\\:mm\\:ss"),
-            ["Image Date"] = () => {
+    public static class InfoProviders {
+        private static IDictionary<string, IInfoProvider> items = new Dictionary<string, IInfoProvider>();
+
+        public static IInfoProvider GetByName(string name) {
+            if (name == null || !items.ContainsKey(name)) {
+                return null;
+            }
+
+            return items[name];
+        }
+
+        // Allow extensibility?
+        public static void Add(IInfoProvider item) {
+            items.Add(item.Name, item);
+        }
+
+        static InfoProviders() {
+            // Default info providers
+            Add(new PolledInfoProvider("uptime", "Uptime", () => TimeSpan.FromMilliseconds(NativeMethods.GetTickCount64()).ToString("d\\.hh\\:mm\\:ss")));
+            Add(new DynamicInfoProvider("imageDate", "ImageDate", () => {
                 using (UserPrincipal identity = UserPrincipal.Current) {
                     return identity.LastPasswordSet?.ToString("d");
                 }
-            },
-            ["Username"] = () => WindowsIdentity.GetCurrent().Name,
-            ["IP Addresses"] = () => {
+            }));
+            Add(new DynamicInfoProvider("username", "Username", () => WindowsIdentity.GetCurrent().Name));
+            Add(new PolledInfoProvider("ipAddresses", "IP Addresses", () => {
                 // Use WMI to get each connected interface's index
                 IEnumerable<uint> interfaceIndices = new ManagementObjectSearcher(
                     "root\\StandardCimv2",
                     "SELECT InterfaceIndex FROM MSFT_NetAdapter WHERE MediaConnectState = 1"
                 ).Get().OfType<ManagementObject>().Select(i => (uint)i.Properties["InterfaceIndex"].Value);
-                    
+
                 // Use WMI to get each connected interface's IPv4 Address
                 IEnumerable<string> ipAddresses = interfaceIndices.SelectMany(ifIndex => new ManagementObjectSearcher(
                     "root\\StandardCimv2",
@@ -30,8 +46,8 @@ namespace DesktopInfo {
                 ).Get().OfType<ManagementObject>().Select(i => i.Properties["IPAddress"].Value.ToString()));
 
                 return String.Join(Environment.NewLine, ipAddresses);
-            },
-            ["Volumes"] = () => {
+            }));
+            Add(new PolledInfoProvider("volumes", "Volumes", () => {
                 // Use WMI to get all fixed volumes, ordered by drive letter
                 IEnumerable<Volume> volumes = new ManagementObjectSearcher(
                     "root\\cimv2",
@@ -48,26 +64,7 @@ namespace DesktopInfo {
                 ));
 
                 return String.Join(Environment.NewLine, volumeStrings);
-            }
-        };
-
-        private InfoItemFactory createInfoListItem;
-        
-        public InfoItem GetByName(string name) {
-            if (name == null || !items.ContainsKey(name)) {
-                return null;
-            }
-
-            return this.createInfoListItem(name, items[name]);
-        }
-
-        // Allow extensibility?
-        public static void Add(string name, InfoItemGetValueHandler getValueHandler) {
-            items[name] = getValueHandler;
-        }
-
-        public InfoItems(InfoItemFactory createInfoListItem) {
-            this.createInfoListItem = createInfoListItem;
+            }));
         }
     }
 }
