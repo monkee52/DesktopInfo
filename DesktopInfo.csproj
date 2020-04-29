@@ -61,7 +61,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="DynamicInfoItem.cs" />
+    <Compile Include="DynamicInfoProvider.cs" />
     <Compile Include="IInfoProvider.cs" />
     <Compile Include="InfoProvider.cs" />
     <Compile Include="InfoProviders.cs" />
